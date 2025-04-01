@@ -57,57 +57,57 @@
 
     <script>
         async function fetchCommits() {
-    try {
-        // Récupérer les données depuis l'API
-        const response = await fetch("/api/commits/");
-        const data = await response.json();
+            try {
+                // Récupérer les données depuis l'API
+                const response = await fetch("/api/commits/");
+                const data = await response.json();
 
-        // Vérification des erreurs
-        if (data.error) {
-            console.error("Erreur API :", data.error);
-            return;
+                // Vérification des erreurs
+                if (data.error) {
+                    console.error("Erreur API :", data.error);
+                    return;
+                }
+
+                // Trier les labels (minutes)
+                const labels = Object.keys(data).sort(); // Trier par heure:minute
+                const values = labels.map(minute => data[minute]);
+
+                // Remplir le tableau HTML
+                const tableBody = document.getElementById("commitsTableBody");
+                tableBody.innerHTML = '';  // Vider le tableau avant de le remplir
+                labels.forEach(minute => {
+                    const row = `<tr><td>${minute}</td><td>${data[minute]}</td></tr>`;
+                    tableBody.innerHTML += row; // Ajouter chaque ligne au tableau
+                });
+
+                // Afficher le graphique
+                const ctx = document.getElementById("commitsChart").getContext("2d");
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: "Nombre de commits",
+                            data: values,
+                            backgroundColor: "rgba(54, 162, 235, 0.6)",
+                            borderColor: "rgba(54, 162, 235, 1)",
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Erreur de chargement des commits :", error);
+            }
         }
 
-        // Trier les labels (minutes)
-        const labels = Object.keys(data).sort(); // Trier par heure:minute
-        const values = labels.map(minute => data[minute]);
-
-        // Remplir le tableau HTML
-        const tableBody = document.getElementById("commitsTableBody");
-        tableBody.innerHTML = '';  // Vider le tableau avant de le remplir
-        labels.forEach(minute => {
-            const row = `<tr><td>${minute}</td><td>${data[minute]}</td></tr>`;
-            tableBody.innerHTML += row; // Ajouter chaque ligne au tableau
-        });
-
-        // Afficher le graphique
-        const ctx = document.getElementById("commitsChart").getContext("2d");
-        new Chart(ctx, {
-            type: "bar",
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: "Nombre de commits",
-                    data: values,
-                    backgroundColor: "rgba(54, 162, 235, 0.6)",
-                    borderColor: "rgba(54, 162, 235, 1)",
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
-        });
-    } catch (error) {
-        console.error("Erreur de chargement des commits :", error);
-    }
-}
-
-// Appel de la fonction pour charger les commits dès le chargement de la page
-fetchCommits();
+        // Appel de la fonction pour charger les commits dès le chargement de la page
+        fetchCommits();
     </script>
 
 </body>
