@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commits par Minute</title>
+    <title>Commits par Minute (3 dernières heures)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -13,7 +13,7 @@
             padding: 20px;
         }
         canvas {
-            max-width: 800px;
+            max-width: 900px;
             margin: 20px auto;
             background: white;
             border-radius: 8px;
@@ -24,7 +24,7 @@
 </head>
 <body>
 
-    <h2>Commits réalisés (minute par minute)</h2>
+    <h2>Commits réalisés (3 dernières heures)</h2>
     <canvas id="commitsChart"></canvas>
 
     <script>
@@ -34,44 +34,55 @@
                 if (!response.ok) throw new Error("Erreur de récupération des commits");
 
                 const commits = await response.json();
-                const commitsByMinute = {};
+                const commitsByTime = {};
+
+                // Heure actuelle et limite de temps (3 dernières heures)
+                const now = new Date();
+                const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
 
                 commits.forEach(commit => {
                     if (commit.commit && commit.commit.author) {
                         const date = new Date(commit.commit.author.date);
-                        const minute = date.getMinutes();
 
-                        commitsByMinute[minute] = (commitsByMinute[minute] || 0) + 1;
+                        // Vérifier si le commit est dans les 3 dernières heures
+                        if (date >= threeHoursAgo) {
+                            const timeLabel = date.getHours().toString().padStart(2, '0') + ":" +
+                                              date.getMinutes().toString().padStart(2, '0');
+
+                            // Remplace au lieu de cumuler
+                            commitsByTime[timeLabel] = (commitsByTime[timeLabel] || 0) + 1;
+                        }
                     }
                 });
 
-                drawChart(commitsByMinute);
+                drawChart(commitsByTime);
             } catch (error) {
                 console.error("Erreur :", error);
             }
         }
 
         function drawChart(data) {
-            const labels = Object.keys(data).sort((a, b) => a - b); // Trier les minutes
-            const values = labels.map(minute => data[minute]);
+            const labels = Object.keys(data).sort(); // Trier les heures/minutes
+            const values = labels.map(time => data[time]);
 
             const ctx = document.getElementById("commitsChart").getContext("2d");
             new Chart(ctx, {
                 type: "bar",
                 data: {
-                    labels: labels.map(m => m + " min"),
+                    labels: labels,
                     datasets: [{
                         label: "Nombre de commits",
                         data: values,
-                        backgroundColor: "rgba(54, 162, 235, 0.6)",
-                        borderColor: "rgba(54, 162, 235, 1)",
+                        backgroundColor: "rgba(255, 99, 132, 0.6)",
+                        borderColor: "rgba(255, 99, 132, 1)",
                         borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
                     scales: {
-                        y: { beginAtZero: true }
+                        x: { title: { display: true, text: "Heure (hh:mm)" } },
+                        y: { beginAtZero: true, title: { display: true, text: "Nombre de commits" } }
                     }
                 }
             });
