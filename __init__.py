@@ -39,12 +39,13 @@ def histogramme():
 def show_commits():
     return render_template('commits.html')
 
+
 @app.route('/api/commits/')
 def get_commits():
     """ Récupère tous les commits depuis GitHub et compte ceux par minute. """
     try:
         # Appel de l'API GitHub
-        with urllib.request.urlopen(GITHUB_API_URL) as url:
+        with urlopen(GITHUB_API_URL) as url:
             commits_data = json.loads(url.read().decode())
 
         commits_by_minute = {}
@@ -70,6 +71,7 @@ def extract_minutes(date_string):
         return date_object.strftime('%H:%M')  # Format HH:MM
     except Exception as e:
         return str(e)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
