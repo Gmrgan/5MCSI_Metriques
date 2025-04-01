@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: Arial, sans-serif;
             text-align: center;
             background: #f4f4f4;
             padding: 20px;
@@ -48,9 +48,8 @@
     <table>
         <thead>
             <tr>
-                <th>Date du Commit</th>
-                <th>Heure</th>
-                <th>Minute</th>
+                <th>Heure:Minute</th>
+                <th>Nombre de Commits</th>
             </tr>
         </thead>
         <tbody id="commitsTableBody"></tbody>
@@ -59,64 +58,48 @@
     <script>
         async function fetchCommits() {
             try {
-                const response = await fetch("https://api.github.com/repos/OpenRSI/5MCSI_Metriques/commits");
-                if (!response.ok) throw new Error("Erreur de récupération des commits");
+                const response = await fetch("/api/commits/");
+                const data = await response.json();
 
-                const commits = await response.json();
-                const commitsByMinute = {};
+                if (data.error) {
+                    console.error("Erreur API :", data.error);
+                    return;
+                }
+
+                const labels = Object.keys(data).sort(); // Trier par heure:minute
+                const values = labels.map(minute => data[minute]);
+
+                // Remplir le tableau HTML
                 const tableBody = document.getElementById("commitsTableBody");
-
-                commits.forEach(commit => {
-                    if (commit.commit && commit.commit.author) {
-                        const dateObj = new Date(commit.commit.author.date);
-                        const dateStr = dateObj.toISOString().split("T")[0]; // Format YYYY-MM-DD
-                        const hour = dateObj.getHours();
-                        const minute = dateObj.getMinutes();
-
-                        // Ajouter au tableau HTML
-                        const row = `<tr>
-                            <td>${dateStr}</td>
-                            <td>${hour}h</td>
-                            <td>${minute} min</td>
-                        </tr>`;
-                        tableBody.innerHTML += row;
-
-                        // Stocker le nombre de commits par minute
-                        const timeKey = `${hour}:${minute}`;
-                        commitsByMinute[timeKey] = (commitsByMinute[timeKey] || 0) + 1;
-                    }
+                labels.forEach(minute => {
+                    const row = `<tr><td>${minute}</td><td>${data[minute]}</td></tr>`;
+                    tableBody.innerHTML += row;
                 });
 
-                drawChart(commitsByMinute);
-            } catch (error) {
-                console.error("Erreur :", error);
-            }
-        }
-
-        function drawChart(data) {
-            const labels = Object.keys(data).sort(); // Trier les horaires
-            const values = labels.map(time => data[time]);
-
-            const ctx = document.getElementById("commitsChart").getContext("2d");
-            new Chart(ctx, {
-                type: "bar",
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: "Nombre de commits",
-                        data: values,
-                        backgroundColor: "rgba(54, 162, 235, 0.6)",
-                        borderColor: "rgba(54, 162, 235, 1)",
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: { beginAtZero: true }
+                // Afficher le graphique
+                const ctx = document.getElementById("commitsChart").getContext("2d");
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: "Nombre de commits",
+                            data: values,
+                            backgroundColor: "rgba(54, 162, 235, 0.6)",
+                            borderColor: "rgba(54, 162, 235, 1)",
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error("Erreur de chargement des commits :", error);
+            }
         }
 
         fetchCommits();
