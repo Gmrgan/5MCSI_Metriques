@@ -35,6 +35,13 @@ def mongraphique():
 def histogramme():
     return render_template("histogramme.html")
 
+from flask import render_template
+
+@app.route('/commits/')
+def show_commits():
+    return render_template('commits.html')
+
+
 if __name__ == "__main__":
   app.run(debug=True)
 
