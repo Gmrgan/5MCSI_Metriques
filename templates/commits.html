@@ -1,109 +1,47 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commits par Minute</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: #f4f4f4;
-            padding: 20px;
-        }
-        canvas {
-            max-width: 800px;
-            margin: 20px auto;
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        table {
-            width: 80%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        th, td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
-        th {
-            background: #007BFF;
-            color: white;
-        }
-    </style>
-</head>
-<body>
+async function fetchCommits() {
+    try {
+        const response = await fetch("/api/commits/");
+        const data = await response.json();
 
-    <h2>Commits réalisés (minute par minute)</h2>
-    <canvas id="commitsChart"></canvas>
+        if (data.error) {
+            console.error("Erreur API :", data.error);
+            return;
+        }
 
-    <h2>Liste des Commits</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Heure:Minute</th>
-                <th>Nombre de Commits</th>
-            </tr>
-        </thead>
-        <tbody id="commitsTableBody"></tbody>
-    </table>
+        const labels = Object.keys(data).sort(); // Trier par heure:minute
+        const values = labels.map(minute => data[minute]);
 
-    <script>
-        async function fetchCommits() {
-            try {
-                const response = await fetch("/api/commits/");
-                const data = await response.json();
+        // Remplir le tableau HTML
+        const tableBody = document.getElementById("commitsTableBody");
+        labels.forEach(minute => {
+            const row = `<tr><td>${minute}</td><td>${data[minute]}</td></tr>`;
+            tableBody.innerHTML += row;
+        });
 
-                if (data.error) {
-                    console.error("Erreur API :", data.error);
-                    return;
+        // Afficher le graphique
+        const ctx = document.getElementById("commitsChart").getContext("2d");
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Nombre de commits",
+                    data: values,
+                    backgroundColor: "rgba(54, 162, 235, 0.6)",
+                    borderColor: "rgba(54, 162, 235, 1)",
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
                 }
-
-                const labels = Object.keys(data).sort(); // Trier par heure:minute
-                const values = labels.map(minute => data[minute]);
-
-                // Remplir le tableau HTML
-                const tableBody = document.getElementById("commitsTableBody");
-                labels.forEach(minute => {
-                    const row = `<tr><td>${minute}</td><td>${data[minute]}</td></tr>`;
-                    tableBody.innerHTML += row;
-                });
-
-                // Afficher le graphique
-                const ctx = document.getElementById("commitsChart").getContext("2d");
-                new Chart(ctx, {
-                    type: "bar",
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: "Nombre de commits",
-                            data: values,
-                            backgroundColor: "rgba(54, 162, 235, 0.6)",
-                            borderColor: "rgba(54, 162, 235, 1)",
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error("Erreur de chargement des commits :", error);
             }
-        }
+        });
+    } catch (error) {
+        console.error("Erreur de chargement des commits :", error);
+    }
+}
 
-        fetchCommits();
-    </script>
-
-</body>
-</html>
+fetchCommits();
