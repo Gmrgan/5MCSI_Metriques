@@ -40,37 +40,25 @@ def show_commits():
     return render_template('commits.html')
 
 
-@app.route('/api/commits/')
+@app.route('/commits-data/')
 def get_commits():
-    """ Récupère tous les commits depuis GitHub et compte ceux par minute. """
-    try:
-        # Appel de l'API GitHub
-        with urlopen(GITHUB_API_URL) as url:
-            commits_data = json.loads(url.read().decode())
+    url = "https://api.github.com/repos/OpenRSI/5MCSI_Metriques/commits"
+    response = requests.get(url)
+    commits = response.json()
 
-        commits_by_minute = {}
+    commits_by_minute = {}
 
-        # Parcours des commits et extraction de la minute
-        for commit in commits_data:
-            commit_date = commit['commit']['author']['date']
-            minute = extract_minutes(commit_date)
-            
-            # Comptage des commits par minute
-            commits_by_minute[minute] = commits_by_minute.get(minute, 0) + 1
+    for commit in commits:
+        commit_date = commit['commit']['author']['date']  # Format: "2024-02-11T11:57:27Z"
+        minute = datetime.strptime(commit_date, '%Y-%m-%dT%H:%M:%SZ').minute
 
-        return jsonify(commits_by_minute)
+        if minute in commits_by_minute:
+            commits_by_minute[minute] += 1
+        else:
+            commits_by_minute[minute] = 1
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify(commits_by_minute)
 
-
-def extract_minutes(date_string):
-    """ Extrait la minute d'un timestamp GitHub. """
-    try:
-        date_object = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
-        return date_object.strftime('%H:%M')  # Format HH:MM
-    except Exception as e:
-        return str(e)
 
 
 if __name__ == "__main__":
