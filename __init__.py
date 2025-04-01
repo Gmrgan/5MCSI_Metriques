@@ -41,34 +41,27 @@ def show_commits():
 
 @app.route('/api/commits/')
 def get_commits():
-    """ Récupère les commits depuis GitHub et les compte par minute dans la dernière heure. """
+    """ Récupère tous les commits depuis GitHub et compte ceux par minute. """
     try:
         # Appel de l'API GitHub
-        with urlopen(GITHUB_API_URL) as url:
+        with urllib.request.urlopen(GITHUB_API_URL) as url:
             commits_data = json.loads(url.read().decode())
-
-        # Filtrer les commits dans la dernière heure
-        current_time = datetime.utcnow()  # Date et heure actuelle en UTC
-        one_hour_ago = current_time - timedelta(hours=1)  # Heure actuelle - 1 heure
 
         commits_by_minute = {}
 
         # Parcours des commits et extraction de la minute
         for commit in commits_data:
             commit_date = commit['commit']['author']['date']
-            commit_time = datetime.strptime(commit_date, '%Y-%m-%dT%H:%M:%SZ')
-
-            # Si le commit a été effectué dans la dernière heure
-            if commit_time >= one_hour_ago:
-                minute = extract_minutes(commit_date)
-                
-                # Comptage des commits par minute
-                commits_by_minute[minute] = commits_by_minute.get(minute, 0) + 1
+            minute = extract_minutes(commit_date)
+            
+            # Comptage des commits par minute
+            commits_by_minute[minute] = commits_by_minute.get(minute, 0) + 1
 
         return jsonify(commits_by_minute)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 def extract_minutes(date_string):
     """ Extrait la minute d'un timestamp GitHub. """
