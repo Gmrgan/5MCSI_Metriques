@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commits par Minute (3 dernières heures)</title>
+    <title>Commits par Minute</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -13,19 +13,48 @@
             padding: 20px;
         }
         canvas {
-            max-width: 900px;
+            max-width: 800px;
             margin: 20px auto;
             background: white;
             border-radius: 8px;
             padding: 15px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        th {
+            background: #007BFF;
+            color: white;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Commits réalisés (3 dernières heures)</h2>
+    <h2>Commits réalisés (minute par minute)</h2>
     <canvas id="commitsChart"></canvas>
+
+    <h2>Liste des Commits</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Date du Commit</th>
+                <th>Heure</th>
+                <th>Minute</th>
+            </tr>
+        </thead>
+        <tbody id="commitsTableBody"></tbody>
+    </table>
 
     <script>
         async function fetchCommits() {
@@ -34,35 +63,38 @@
                 if (!response.ok) throw new Error("Erreur de récupération des commits");
 
                 const commits = await response.json();
-                const commitsByTime = {};
-
-                // Heure actuelle et limite de temps (3 dernières heures)
-                const now = new Date();
-                const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+                const commitsByMinute = {};
+                const tableBody = document.getElementById("commitsTableBody");
 
                 commits.forEach(commit => {
                     if (commit.commit && commit.commit.author) {
-                        const date = new Date(commit.commit.author.date);
+                        const dateObj = new Date(commit.commit.author.date);
+                        const dateStr = dateObj.toISOString().split("T")[0]; // Format YYYY-MM-DD
+                        const hour = dateObj.getHours();
+                        const minute = dateObj.getMinutes();
 
-                        // Vérifier si le commit est dans les 3 dernières heures
-                        if (date >= threeHoursAgo) {
-                            const timeLabel = date.getHours().toString().padStart(2, '0') + ":" +
-                                              date.getMinutes().toString().padStart(2, '0');
+                        // Ajouter au tableau HTML
+                        const row = `<tr>
+                            <td>${dateStr}</td>
+                            <td>${hour}h</td>
+                            <td>${minute} min</td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
 
-                            // Remplace au lieu de cumuler
-                            commitsByTime[timeLabel] = (commitsByTime[timeLabel] || 0) + 1;
-                        }
+                        // Stocker le nombre de commits par minute
+                        const timeKey = `${hour}:${minute}`;
+                        commitsByMinute[timeKey] = (commitsByMinute[timeKey] || 0) + 1;
                     }
                 });
 
-                drawChart(commitsByTime);
+                drawChart(commitsByMinute);
             } catch (error) {
                 console.error("Erreur :", error);
             }
         }
 
         function drawChart(data) {
-            const labels = Object.keys(data).sort(); // Trier les heures/minutes
+            const labels = Object.keys(data).sort(); // Trier les horaires
             const values = labels.map(time => data[time]);
 
             const ctx = document.getElementById("commitsChart").getContext("2d");
@@ -73,16 +105,15 @@
                     datasets: [{
                         label: "Nombre de commits",
                         data: values,
-                        backgroundColor: "rgba(255, 99, 132, 0.6)",
-                        borderColor: "rgba(255, 99, 132, 1)",
+                        backgroundColor: "rgba(54, 162, 235, 0.6)",
+                        borderColor: "rgba(54, 162, 235, 1)",
                         borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
                     scales: {
-                        x: { title: { display: true, text: "Heure (hh:mm)" } },
-                        y: { beginAtZero: true, title: { display: true, text: "Nombre de commits" } }
+                        y: { beginAtZero: true }
                     }
                 }
             });
