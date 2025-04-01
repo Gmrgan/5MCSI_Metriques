@@ -1,12 +1,12 @@
-from flask import Flask, render_template_string, render_template, jsonify
-from flask import render_template
-from flask import json
+from flask import Flask, render_template, jsonify
+import json
 from datetime import datetime
 from urllib.request import urlopen
-import sqlite3 
-                                                                                                                                       
-app = Flask(__name__)                                                                                                                  
-                                                                                                                                       
+
+app = Flask(__name__)
+
+GITHUB_API_URL = "https://api.github.com/repos/OpenRSI/5MCSI_Metriques/commits"  # Ajout de l'URL de l'API GitHub
+
 @app.route('/')
 def hello_world():
     return render_template('hello.html')
@@ -23,7 +23,7 @@ def meteo():
     results = []
     for list_element in json_content.get('list', []):
         dt_value = list_element.get('dt')
-        temp_day_value = list_element.get('main', {}).get('temp') - 273.15 # Conversion de Kelvin en °c 
+        temp_day_value = list_element.get('main', {}).get('temp') - 273.15  # Conversion de Kelvin en °C
         results.append({'Jour': dt_value, 'temp': temp_day_value})
     return jsonify(results=results)
 
@@ -35,8 +35,6 @@ def mongraphique():
 def histogramme():
     return render_template("histogramme.html")
 
-from flask import render_template
-
 @app.route('/commits/')
 def show_commits():
     return render_template('commits.html')
@@ -46,7 +44,7 @@ def get_commits():
     """ Récupère les commits depuis GitHub et compte ceux par minute. """
     try:
         # Appel de l'API GitHub
-        with urllib.request.urlopen(GITHUB_API_URL) as url:
+        with urlopen(GITHUB_API_URL) as url:
             commits_data = json.loads(url.read().decode())
 
         commits_by_minute = {}
@@ -72,8 +70,5 @@ def extract_minutes(date_string):
     except Exception as e:
         return str(e)
 
-
-
 if __name__ == "__main__":
-  app.run(debug=True)
-
+    app.run(debug=True)
